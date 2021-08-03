@@ -1,2 +1,8 @@
+# Agent videos
+*.mp4
+
 # Python Cache
-__pycache__/
+__pycache__
+
+# No clue
+rooms.pyc

@@ -122,3 +122,6 @@ class A2CLearner:
             # Don't forget to delete all experiences afterwards! This is an on-policy algorithm.
             self.transitions.clear()
         return loss
+    
+    def flatNumpyState(state):
+        return numpy.array(state).flatten()

@@ -1,12 +1,18 @@
 import rooms
 import agent as a
 import matplotlib.pyplot as plot
+import numpy
+
+# from a2c import A2CLearner
+
+
+def flatNumpyState(state):
+    return numpy.array(state).flatten()
 
 
 def episode(env, agent, nr_episode=0):
     # print(agent.epsilon)
     state = env.reset()
-    print(state)
     discounted_return = 0
     discount_factor = 0.99
     done = False
@@ -35,6 +41,7 @@ def episode(env, agent, nr_episode=0):
 params = {}
 training_episodes = 500
 env = rooms.load_env("layouts/rooms_9_9_4.txt", "rooms_9_500_100.mp4", 100)
+initialState = env.reset()
 params["nr_actions"] = env.action_space.n
 params["gamma"] = 0.99
 params["horizon"] = 10
@@ -42,10 +49,12 @@ params["simulations"] = 100
 params["alpha"] = 0.2
 params["epsilon"] = 0.1
 params["env"] = env
+params["nr_input_features"] = len(flatNumpyState(initialState))
 
 # agent = a.RandomAgent(params)
 agent = a.SARSALearner(params)
 # agent = a.QLearner(params)
+# a2cAgent = A2CLearner()
 
 returns = [episode(env, agent, i) for i in range(training_episodes)]
 
