@@ -80,13 +80,13 @@ class RoomsEnv(gym.Env):
         x, y = self.agent_position
         reward = 0
         if action == MOVE_NORTH and y + 1 < self.height:
-            self.set_position_if_no_obstacle((x, y + 1))
+            reward = self.set_position_if_no_obstacle((x, y + 1))
         elif action == MOVE_SOUTH and y - 1 >= 0:
-            self.set_position_if_no_obstacle((x, y - 1))
+            reward = self.set_position_if_no_obstacle((x, y - 1))
         if action == MOVE_WEST and x - 1 >= 0:
-            self.set_position_if_no_obstacle((x - 1, y))
+            reward = self.set_position_if_no_obstacle((x - 1, y))
         elif action == MOVE_EAST and x + 1 < self.width:
-            self.set_position_if_no_obstacle((x + 1, y))
+            reward = self.set_position_if_no_obstacle((x + 1, y))
         goal_reached = self.agent_position == self.goal_position
         if goal_reached:
             reward = 1
@@ -97,6 +97,9 @@ class RoomsEnv(gym.Env):
     def set_position_if_no_obstacle(self, new_position):
         if new_position not in self.obstacles:
             self.agent_position = new_position
+            return 0
+        else:
+            return -0.1
 
     def reset(self):
         self.done = False
