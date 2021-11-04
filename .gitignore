@@ -6,3 +6,6 @@ __pycache__
 
 # No clue
 rooms.pyc
+
+# VS code setting
+.vscode
