@@ -52,6 +52,19 @@ class RoomsEnv(gym.Env):
         self.state_history = []
         self.reset()
 
+    def is_subgoal(self, state):
+        is_at_goal = self.agent_position == self.goal_position
+        x, y = self.agent_position
+        is_at_door_vertical = (
+            state[y - 1][x][OBSTACLE_CHANNEL] == 1
+            and state[y + 1][x][OBSTACLE_CHANNEL] == 1
+        )
+        is_at_door_horizontal = (
+            state[y][x - 1][OBSTACLE_CHANNEL] == 1
+            and state[y][x + 1][OBSTACLE_CHANNEL] == 1
+        )
+        return is_at_goal or is_at_door_vertical or is_at_door_horizontal
+
     def state(self):
         state = numpy.zeros((NR_CHANNELS, self.width, self.height))
         x_agent, y_agent = self.agent_position
@@ -61,7 +74,7 @@ class RoomsEnv(gym.Env):
         for obstacle in self.obstacles:
             x, y = obstacle
             state[OBSTACLE_CHANNEL][x][y] = 1
-        return state
+        return numpy.swapaxes(state, 0, 2)
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -80,13 +93,13 @@ class RoomsEnv(gym.Env):
         x, y = self.agent_position
         reward = 0
         if action == MOVE_NORTH and y + 1 < self.height:
-            reward = self.set_position_if_no_obstacle((x, y + 1))
+            self.set_position_if_no_obstacle((x, y + 1))
         elif action == MOVE_SOUTH and y - 1 >= 0:
-            reward = self.set_position_if_no_obstacle((x, y - 1))
+            self.set_position_if_no_obstacle((x, y - 1))
         if action == MOVE_WEST and x - 1 >= 0:
-            reward = self.set_position_if_no_obstacle((x - 1, y))
+            self.set_position_if_no_obstacle((x - 1, y))
         elif action == MOVE_EAST and x + 1 < self.width:
-            reward = self.set_position_if_no_obstacle((x + 1, y))
+            self.set_position_if_no_obstacle((x + 1, y))
         goal_reached = self.agent_position == self.goal_position
         if goal_reached:
             reward = 1
@@ -97,9 +110,6 @@ class RoomsEnv(gym.Env):
     def set_position_if_no_obstacle(self, new_position):
         if new_position not in self.obstacles:
             self.agent_position = new_position
-            return 0
-        else:
-            return -0.1
 
     def reset(self):
         self.done = False
@@ -111,9 +121,10 @@ class RoomsEnv(gym.Env):
     def state_summary(self, state):
         return {
             "agent_x": self.agent_position[0],
-            "agent_y": self.agent_position[1],
+            "agent_y": self.agent_position[0],
             "goal_x": self.goal_position[0],
-            "goal_y": self.goal_position[1],
+            "goal_y": self.goal_position[0],
+            "is_subgoal": self.is_subgoal(state),
             "time_step": self.time,
             "score": self.undiscounted_return,
         }
@@ -121,13 +132,14 @@ class RoomsEnv(gym.Env):
     def save_video(self):
         if self.movie_filename is not None:
             history_of_states = self.state_history
-            duration = len(history_of_states)
+            duration_in_seconds = len(history_of_states) / 4
             fig, ax = plot.subplots()
+            frames_per_second = len(history_of_states) / duration_in_seconds
 
             def make_frame(t):
                 ax.clear()
                 ax.grid(False)
-                ax.imshow(numpy.swapaxes(history_of_states[int(t)], 0, 2))
+                ax.imshow(history_of_states[int(t * frames_per_second)])
                 ax.tick_params(
                     axis="both",
                     which="both",
@@ -140,8 +152,8 @@ class RoomsEnv(gym.Env):
                 )
                 return mplfig_to_npimage(fig)
 
-            animation = VideoClip(make_frame, duration=duration)
-            animation.write_videofile(self.movie_filename, fps=2)
+            animation = VideoClip(make_frame, duration=duration_in_seconds)
+            animation.write_videofile(self.movie_filename, fps=frames_per_second)
 
 
 def read_map_file(path):
