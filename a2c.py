@@ -16,12 +16,13 @@ class A2CNet(nn.Module):
             nn.Linear(nr_hidden_units, nr_hidden_units),
             nn.ReLU(),
         )
+        self.nr_input_features = nr_input_features
         self.action_head = nn.Linear(nr_hidden_units, nr_actions)
         self.value_head = nn.Linear(nr_hidden_units, 1)
 
     def forward(self, x):
+        x = x.view(x.size(0), self.nr_input_features)
         x = self.fc_net(x)
-        x = x.view(x.size(0), -1)
         return F.softmax(self.action_head(x), dim=-1), self.value_head(x)
 
 
@@ -36,7 +37,7 @@ class A2CLearner:
         self.gamma = params["gamma"]
         self.nr_actions = params["nr_actions"]
         self.alpha = params["alpha"]
-        self.nr_input_features = params["nr_input_features"]
+        self.nr_input_features = numpy.prod(params["nr_input_features"])
         self.transitions = []
         self.device = torch.device("cpu")
         self.a2c_net = A2CNet(self.nr_input_features, self.nr_actions).to(self.device)
@@ -61,14 +62,6 @@ class A2CLearner:
         return self.a2c_net(states)
 
     """
-     Predicts the state values.
-    """
-
-    def predict_value(self, states):
-        states = torch.tensor(states, device=self.device, dtype=torch.float)
-        return self.value_net(states)
-
-    """
      Performs a learning update of the currently learned policy and value function.
     """
 
@@ -77,16 +70,14 @@ class A2CLearner:
         loss = None
         if done:
             states, actions, rewards, next_states, dones = tuple(zip(*self.transitions))
-            print(rewards)
             discounted_returns = []
+
             # Calculate and normalize discounted returns
             R = 0
             for reward in reversed(rewards):
                 R = reward + self.gamma * R
                 discounted_returns.append(R)
             discounted_returns.reverse()
-            print("discounted_returns")
-            print(discounted_returns)
             states = states
             next_states = next_states
             rewards = torch.tensor(rewards, device=self.device, dtype=torch.float)
@@ -95,8 +86,6 @@ class A2CLearner:
             ).detach()
             normalized_returns = discounted_returns - discounted_returns.mean()
             normalized_returns /= discounted_returns.std() + self.eps
-            print("normalized_returns")
-            print(normalized_returns)
 
             # Calculate losses of policy and value function
             actions = torch.tensor(actions, device=self.device, dtype=torch.long)
@@ -109,19 +98,13 @@ class A2CLearner:
             ):
                 advantage = R - value.item()
                 m = Categorical(probs)
-                print("m.log_prob(action): {}".format(m.log_prob(action)))
                 policy_losses.append(-m.log_prob(action) * advantage)
                 value_losses.append(F.smooth_l1_loss(value, torch.tensor([R])))
             loss = torch.stack(policy_losses).sum() + torch.stack(value_losses).sum()
-            print("loss: {}".format(loss))
+
             # Optimize joint loss
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
-
-            # Don't forget to delete all experiences afterwards! This is an on-policy algorithm.
             self.transitions.clear()
         return loss
-    
-    def flatNumpyState(state):
-        return numpy.array(state).flatten()
