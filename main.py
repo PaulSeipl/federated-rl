@@ -45,8 +45,18 @@ def get_movie_file_path(room_file, max_steps):
     return f"movies/{room_file.replace('.txt', '')}_{max_steps}.mp4"
 
 
+def get_parameters(env, alpha=0.001, gamma=0.99):
+    return {
+        # NN input and output
+        "nr_actions": env.action_space.n,
+        "nr_input_features": env.observation_space.shape,
+        # Hyperparameters
+        "alpha": alpha,  # learning rate
+        "gamma": gamma,  # discount factor
+    }
+
+
 # Setup file names
-params = {}
 training_episodes = 1
 max_steps = 100
 rooms_dir = "9_9_4"
@@ -58,12 +68,9 @@ movie_file_name = get_movie_file_path(room_file, max_steps)
 
 # Domain setup
 env = rooms.load_env(room_path, movie_file_name, max_steps)
-params["nr_actions"] = env.action_space.n
-params["nr_input_features"] = env.observation_space.shape
-params["env"] = env
-# Hyperparameters
-params["gamma"] = 0.99  # dinscount
-params["alpha"] = 0.001  # lerning rate
+
+# params
+params = get_parameters(env, alpha=0.001, gamma=0.99)
 print(f"params: {params}")
 
 # Agent setup
