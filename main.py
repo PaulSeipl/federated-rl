@@ -1,6 +1,6 @@
-import rooms
-import a2c
+from src import rooms, a2c
 import matplotlib.pyplot as plot
+from os import walk
 
 
 def episode(env, agent, nr_episode=0):
@@ -24,11 +24,40 @@ def episode(env, agent, nr_episode=0):
     return discounted_return
 
 
+def create_plot(title, x_data, x_label, y_data, y_label):
+    plot.plot(x_data, y_data)
+    plot.title(title)
+    plot.xlabel(x_label)
+    plot.ylabel(y_label)
+    plot.show()
+
+
+def get_room_files(rooms_dir):
+    (_, _, room_files) = next(walk(f"./layouts/{rooms_dir}"), (None, None, []))
+    return room_files
+
+
+def get_room_path(rooms_dir, room_file):
+    return f"layouts/{rooms_dir}/{room_file}"
+
+
+def get_movie_file_path(room_file, max_steps):
+    return f"movies/{room_file.replace('.txt', '')}_{max_steps}.mp4"
+
+
+# Setup file names
 params = {}
-training_episodes = 3000
+training_episodes = 1
 max_steps = 100
+rooms_dir = "9_9_4"
+
+room_files = get_room_files(rooms_dir)
+room_file = room_files[1]
+room_path = get_room_path(rooms_dir, room_file)
+movie_file_name = get_movie_file_path(room_file, max_steps)
+
 # Domain setup
-env = rooms.load_env("layouts/rooms_9_9_4.txt", "rooms.mp4", max_steps)
+env = rooms.load_env(room_path, movie_file_name, max_steps)
 params["nr_actions"] = env.action_space.n
 params["nr_input_features"] = env.observation_space.shape
 params["env"] = env
@@ -38,16 +67,12 @@ params["alpha"] = 0.001  # lerning rate
 print(f"params: {params}")
 
 # Agent setup
-agent = a2c.A2CLearner(params)
-returns = [episode(env, agent, i) for i in range(training_episodes)]
+main_agent = a2c.A2CLearner(params)
+returns = [episode(env, main_agent, i) for i in range(training_episodes)]
 
-x = range(training_episodes)
-y = returns
+x_data = range(training_episodes)
+y_data = returns
 
-plot.plot(x, y)
-plot.title("Progress")
-plot.xlabel("episode")
-plot.ylabel("undiscounted return")
-plot.show()
+create_plot("Progress", x_data, "episode", y_data, "discounted return")
 
 env.save_video()
