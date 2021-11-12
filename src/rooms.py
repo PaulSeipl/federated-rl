@@ -28,6 +28,8 @@ class RoomsEnv(gym.Env):
         self,
         width,
         height,
+        start_position,
+        goal_position,
         obstacles,
         time_limit,
         stochastic=False,
@@ -41,7 +43,8 @@ class RoomsEnv(gym.Env):
         )
         self.agent_position = None
         self.done = False
-        self.goal_position = (width - 2, height - 2)
+        self.start_position = start_position
+        self.goal_position = goal_position
         self.obstacles = obstacles
         self.time_limit = time_limit
         self.time = 0
@@ -113,7 +116,7 @@ class RoomsEnv(gym.Env):
 
     def reset(self):
         self.done = False
-        self.agent_position = (1, 1)
+        self.agent_position = self.start_position
         self.time = 0
         self.state_history.clear()
         return self.state()
@@ -161,6 +164,8 @@ def read_map_file(path):
     assert file.is_file()
     with open(path) as f:
         content = f.readlines()
+    start_position = (1, 1)
+    goal_position = None
     obstacles = []
     width = 0
     height = 0
@@ -168,13 +173,28 @@ def read_map_file(path):
         for x, cell in enumerate(line.strip().split()):
             if cell == "#":
                 obstacles.append((x, y))
+            if cell.lower() == "s":
+                start_position = (x, y)
+            if cell.lower() == "g":
+                goal_position = (x, y)
             width = x
         height = y
     width += 1
     height += 1
-    return width, height, obstacles
+    if not (goal_position):
+        goal_position = (width - 2, height - 2)
+    return width, height, start_position, goal_position, obstacles
 
 
 def load_env(path, movie_filename, time_limit=100, stochastic=False):
-    width, height, obstacles = read_map_file(path)
-    return RoomsEnv(width, height, obstacles, time_limit, stochastic, movie_filename)
+    width, height, start_position, goal_position, obstacles = read_map_file(path)
+    return RoomsEnv(
+        width,
+        height,
+        start_position,
+        goal_position,
+        obstacles,
+        time_limit,
+        stochastic,
+        movie_filename,
+    )
