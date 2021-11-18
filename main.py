@@ -25,6 +25,7 @@ def episode(env, agent, nr_episode=0):
 
 
 def create_plot(title, x_data, x_label, y_data, y_label):
+    plot.close()
     plot.plot(x_data, y_data)
     plot.title(title)
     plot.xlabel(x_label)
@@ -56,50 +57,55 @@ def get_parameters(env, alpha=0.001, gamma=0.99):
     }
 
 
-# Setup file names
-training_episodes = 100
-max_steps = 100
-rooms_dir = "9_9_4"
+def main():
+    # Setup file names
+    training_episodes = 1
+    max_steps = 100
+    rooms_dir = "9_9_4"
 
-room_files = get_room_files(rooms_dir)
+    room_files = get_room_files(rooms_dir)
 
-# Domain setup
-envs = [
-    rooms.load_env(
-        get_room_path(rooms_dir, room_file),
-        get_movie_file_path(room_file, max_steps),
-        max_steps,
-    )
-    for room_file in room_files
-]
+    # Domain setup
+    envs = [
+        rooms.load_env(
+            get_room_path(rooms_dir, room_file),
+            get_movie_file_path(room_file, max_steps),
+            max_steps,
+        )
+        for room_file in room_files
+    ]
 
-# params
-params = get_parameters(envs[0], alpha=0.001, gamma=0.99)
-print(f"params: {params}")
+    # params
+    params = get_parameters(envs[0], alpha=0.001, gamma=0.99)
+    print(f"params: {params}")
 
-# multiple agents
-env_agent_pairs = [(env, a2c.A2CLearner(params)) for env in envs]
+    # multiple agents
+    env_agent_pairs = [(env, a2c.A2CLearner(params)) for env in envs]
 
-for (env, agent) in env_agent_pairs:
-    returns = [episode(env, agent, i) for i in range(training_episodes)]
-    x_data = range(training_episodes)
-    y_data = returns
-    create_plot(
-        f"Progress: {env.movie_filename}",
-        x_data,
-        "episode",
-        y_data,
-        "discounted return",
-    )
-    env.save_video()
+    for (env, agent) in env_agent_pairs:
+        returns = [episode(env, agent, i) for i in range(training_episodes)]
+        x_data = range(training_episodes)
+        y_data = returns
+        create_plot(
+            f"Progress: {env.movie_filename.replace('.mp4', '')}",
+            x_data,
+            "episode",
+            y_data,
+            "discounted return",
+        )
+        env.save_video()
 
-# Agent setup
-# main_agent = a2c.A2CLearner(params)
-# returns = [episode(env, main_agent, i) for i in range(training_episodes)]
+    # Agent setup
+    # main_agent = a2c.A2CLearner(params)
+    # returns = [episode(env, main_agent, i) for i in range(training_episodes)]
 
-# x_data = range(training_episodes)
-# y_data = returns
+    # x_data = range(training_episodes)
+    # y_data = returns
 
-# create_plot("Progress", x_data, "episode", y_data, "discounted return")
+    # create_plot("Progress", x_data, "episode", y_data, "discounted return")
 
-# env.save_video()
+    # env.save_video()
+
+
+if __name__ == "__main__":
+    main()
