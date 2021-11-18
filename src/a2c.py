@@ -43,6 +43,9 @@ class A2CLearner:
         self.a2c_net = A2CNet(self.nr_input_features, self.nr_actions).to(self.device)
         self.optimizer = torch.optim.Adam(self.a2c_net.parameters(), lr=params["alpha"])
 
+    def getWeights(self):
+        return self.a2c_net
+
     """
      Samples a new action using the policy network.
     """
