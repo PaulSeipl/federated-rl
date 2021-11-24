@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
+from copy import deepcopy
 
 
 class A2CNet(nn.Module):
@@ -34,6 +35,7 @@ class A2CNet(nn.Module):
 class A2CLearner:
     def __init__(self, params):
         self.eps = numpy.finfo(numpy.float32).eps.item()
+        self.name = params["name"]
         self.gamma = params["gamma"]
         self.nr_actions = params["nr_actions"]
         self.alpha = params["alpha"]
@@ -42,6 +44,42 @@ class A2CLearner:
         self.device = torch.device("cpu")
         self.a2c_net = A2CNet(self.nr_input_features, self.nr_actions).to(self.device)
         self.optimizer = torch.optim.Adam(self.a2c_net.parameters(), lr=params["alpha"])
+
+    def get_parameters(self):
+        return self.a2c_net.parameters()
+
+    def get_state_dict(self):
+        return self.a2c_net.state_dict()
+
+    def get_state_dict_copy(self):
+        return deepcopy(self.a2c_net.state_dict())
+
+    def save_state_dict(self):
+        torch.save(self.a2c_net.state_dict(), f"../models/{self.name}_dict.pt")
+
+    def load_state_dict(self, state_dict):
+        self.a2c_net.load_state_dict(state_dict)
+
+    def load_state_dict_file(self):
+        self.a2c_net.load_state_dict(torch.load(f"../models/{self.name}_dict.pt"))
+
+    def save_net(self, model_name=None):
+        torch.save(self.a2c_net, f"../models/{self.name}_model.pt") if not (
+            model_name
+        ) else torch.save(self.a2c_net, f"./models/{model_name}_model.pt")
+
+    def load_net_file(self, model_name=None):
+        self.a2c_net = (
+            torch.load(f"../models/{model_name}_model.pt")
+            if model_name
+            else torch.load(f"../models/{self.name}_model.pt")
+        )
+
+    def get_name(self):
+        return self.name
+
+    def set_name(self, name):
+        self.name = name
 
     """
      Samples a new action using the policy network.

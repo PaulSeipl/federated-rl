@@ -1,0 +1,5 @@
+# federated machine learning implementation
+https://blog.paperspace.com/pytorch-101-advanced/
+https://blog.openmined.org/upgrade-to-federated-learning-in-10-lines/
+https://www.morganclaypool.com/doi/abs/10.2200/S00960ED2V01Y201910AIM043
+https://blog.openmined.org/tag/pysyft/
