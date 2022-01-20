@@ -25,13 +25,13 @@ def episode(env, agent, nr_episode=0):
     return discounted_return
 
 
-def create_plot(title, x_data, x_label, y_data, y_label):
+def create_plot(title, x_data, x_label, y_data, y_label, plot_name):
     plot.close()
     plot.plot(x_data, y_data)
     plot.title(title)
     plot.xlabel(x_label)
     plot.ylabel(y_label)
-    plot.show()
+    plot.savefig(plot_name)
 
 
 def get_room_files(rooms_dir):
@@ -47,7 +47,7 @@ def get_movie_file_path(room_file, max_steps):
     return f"movies/{room_file.replace('.txt', '')}_{max_steps}.mp4"
 
 
-def get_parameters(env, alpha=0.001, gamma=0.99):
+def get_parameters(env, plotName, alpha=0.001, gamma=0.99):
     return {
         # NN input and output
         "nr_actions": env.action_space.n,
@@ -57,6 +57,7 @@ def get_parameters(env, alpha=0.001, gamma=0.99):
         "gamma": gamma,  # discount factor
         # "id"
         "name": f"Progress: {env.movie_filename.replace('.mp4', '')}",
+        "plot_name": f"./plots/{plotName}",
     }
 
 
@@ -66,8 +67,9 @@ def initialize_main_agent(max_steps):
         "movies/rooms_9_9_4_t0.mp4",
         max_steps,
     )
-    agent = a2c.A2CLearner(get_parameters(env, alpha=0.001, gamma=0.99))
-    # agent.a2c_net.train(False)
+    agent = a2c.A2CLearner(
+        get_parameters(env, "rooms_9_9_4_t0", alpha=0.001, gamma=0.99)
+    )
     return env, agent
 
 
@@ -92,11 +94,11 @@ def main():
     ]
 
     # params
-    print(f"params: {get_parameters(envs[0], alpha=0.001, gamma=0.99)}")
+    print(f"params: {get_parameters(envs[0],'', alpha=0.001, gamma=0.99)}")
 
     # multiple agents
     worker_agents = [
-        a2c.A2CLearner(get_parameters(env, alpha=0.001, gamma=0.99)) for env in envs
+        a2c.A2CLearner(get_parameters(env, "", alpha=0.001, gamma=0.99)) for env in envs
     ]
     # run x "training_episodes" for every agent "working_intervals" times
     for _ in range(working_intervals):
@@ -106,7 +108,7 @@ def main():
             worker.load_state_dict(main_agent.get_state_dict_copy())
 
             # run {training_episodes} episodes for each agent
-            [episode(env, worker, i) for i in range(test_episodes)]
+            data = [episode(env, worker, i) for i in range(test_episodes)]
 
             # safe worker state_dict
             worker_state_dicts.append(worker.get_state_dict_copy())
@@ -123,7 +125,7 @@ def main():
 
     test_episodes = 100
     # run test with main_agent
-    # main_agent.a2c_net.eval()
+    main_agent.a2c_net.eval()
     returns = [episode(test_env, main_agent, i) for i in range(test_episodes)]
 
     x_data = range(test_episodes)
@@ -135,6 +137,7 @@ def main():
         "episode",
         y_data,
         "discounted return",
+        main_agent.plot_name,
     )
 
     # test_env.save_video()

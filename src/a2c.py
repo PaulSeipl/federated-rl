@@ -40,6 +40,7 @@ class A2CLearner:
         self.nr_actions = params["nr_actions"]
         self.alpha = params["alpha"]
         self.nr_input_features = numpy.prod(params["nr_input_features"])
+        self.plot_name = params["plot_name"]
         self.transitions = []
         self.device = torch.device("cpu")
         self.a2c_net = A2CNet(self.nr_input_features, self.nr_actions).to(self.device)
