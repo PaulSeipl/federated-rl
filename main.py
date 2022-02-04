@@ -106,7 +106,9 @@ def main():
     )
 
     # test_env.save_video()
-    main_agent.save_net("main_agent")
+    main_agent.save_net(
+        f"{rooms_dir}_tr{training_episodes}_x{working_intervals}_t{test_episodes}_{main_agent.name}"
+    )
     # returns = [episode(env, agent, i) for i in range(training_episodes)]
     # x_data = range(training_episodes)
     # y_data = returns
