@@ -11,6 +11,7 @@ rooms.pyc
 .vscode
 
 # Everything in plots,models,movies ##TODO add tmp folder
-plots
+plots/*.svg
+plots/*.png
 models
 movies

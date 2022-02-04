@@ -1,4 +1,4 @@
-def episode(env, agent, nr_episode=0):
+def episode(env, agent, nr_episode=0, increment=0):
     state = env.reset()
     discounted_return = 0
     discount_factor = 0.99
@@ -15,13 +15,13 @@ def episode(env, agent, nr_episode=0):
         state = next_state
         discounted_return += reward * (discount_factor ** time_step)
         time_step += 1
-    print(agent.name, ", ", nr_episode, ":", discounted_return)
+    print(agent.name, ", ", nr_episode + increment, ":", discounted_return)
     return discounted_return
 
 
 def train(working_intervals, training_episodes, worker_envs, worker_agents, main_agent):
     worker_returns = [(worker_agent.name, []) for worker_agent in worker_agents]
-    for _ in range(working_intervals):
+    for interval in range(working_intervals):
         worker_state_dicts = []
         for index, (env, worker) in enumerate(zip(worker_envs, worker_agents)):
             # initialize each agent with state_dict from main agent
@@ -30,7 +30,9 @@ def train(working_intervals, training_episodes, worker_envs, worker_agents, main
             # run {training_episodes} episodes for each agent
 
             [
-                worker_returns[index][1].append(episode(env, worker, i))
+                worker_returns[index][1].append(
+                    episode(env, worker, i, interval * training_episodes)
+                )
                 for i in range(training_episodes)
             ]
 
