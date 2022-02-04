@@ -1,17 +1,8 @@
 from numpy.core.fromnumeric import mean
 from src import rooms, a2c
-import matplotlib.pyplot as plot
+from plots.helper import create_main_plot, create_worker_plot
 import layouts.helper as layouts
 from src.train import train, episode
-
-
-def create_plot(title, x_data, x_label, y_data, y_label, plot_name):
-    plot.close()
-    plot.plot(x_data, y_data)
-    plot.title(title)
-    plot.xlabel(x_label)
-    plot.ylabel(y_label)
-    plot.savefig(plot_name)
 
 
 def get_movie_file_path(room_file, max_steps):
@@ -48,8 +39,9 @@ def initialize_main_agent(max_steps, rooms_dir):
 
 def main():
     # Setup file names
-    training_episodes = 1
-    working_intervals = 1
+    training_episodes = 500
+    working_intervals = 20
+    test_episodes = 100
     max_steps = 100
     rooms_dir = "9_9_4"
     test_env, main_agent = initialize_main_agent(max_steps, rooms_dir)
@@ -83,9 +75,28 @@ def main():
     print(f"params: {parameterList[0]}")
 
     # run x "training_episodes" for every agent "working_intervals" times
-    train(working_intervals, training_episodes, worker_envs, worker_agents, main_agent)
+    worker_returns = train(
+        working_intervals, training_episodes, worker_envs, worker_agents, main_agent
+    )
 
-    test_episodes = 100
+    for (name, worker_return) in worker_returns:
+        x_data = range(len(worker_return))
+        y_data = worker_return
+        plot_name = f"tr{training_episodes}_x{working_intervals}"
+        create_worker_plot(
+            f"Progress: Room {name}, {training_episodes*working_intervals} Trainingepisoden, Update nach {training_episodes}",
+            x_data,
+            "episode",
+            y_data,
+            "discounted return",
+            working_intervals,
+            training_episodes,
+            get_plot_file_path(
+                name,
+                plot_name,
+            ),
+        )
+
     # run test with main_agent
     # main_agent.a2c_net.eval()
     returns = [episode(test_env, main_agent, i) for i in range(test_episodes)]
@@ -93,7 +104,7 @@ def main():
     x_data = range(test_episodes)
     y_data = returns
 
-    create_plot(
+    create_main_plot(
         f"Progress: {main_agent.name}",
         x_data,
         "episode",
