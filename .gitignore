@@ -9,3 +9,8 @@ rooms.pyc
 
 # VS code setting
 .vscode
+
+# Everything in plots,models,movies ##TODO add tmp folder
+./plots
+./models
+./movies
