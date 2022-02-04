@@ -5,17 +5,21 @@ import layouts.helper as layouts
 from src.train import train, episode
 
 
-def create_plot(title, x_data, x_label, y_data, y_label):
+def create_plot(title, x_data, x_label, y_data, y_label, plot_name):
     plot.close()
     plot.plot(x_data, y_data)
     plot.title(title)
     plot.xlabel(x_label)
     plot.ylabel(y_label)
-    plot.show()
+    plot.savefig(plot_name)
 
 
 def get_movie_file_path(room_file, max_steps):
     return f"movies/{room_file.replace('.txt', '')}_{max_steps}.mp4"
+
+
+def get_plot_file_path(name, max_steps):
+    return f"plots/{name}_{max_steps}"
 
 
 def get_parameters(env, name, alpha=0.001, gamma=0.99):
@@ -33,13 +37,11 @@ def get_parameters(env, name, alpha=0.001, gamma=0.99):
 
 def initialize_main_agent(max_steps, rooms_dir):
     env = rooms.load_env(
-        f"layouts/{rooms_dir}/test/rooms_{rooms_dir}_t0.txt",
-        f"movies/rooms_{rooms_dir}_t0.mp4",
+        f"layouts/{rooms_dir}/test/t0.txt",
+        f"movies/t0.mp4",
         max_steps,
     )
-    agent = a2c.A2CLearner(
-        get_parameters(env, f"{rooms_dir}_t0", alpha=0.001, gamma=0.99)
-    )
+    agent = a2c.A2CLearner(get_parameters(env, "t0", alpha=0.001, gamma=0.99))
     # agent.a2c_net.train(False)
     return env, agent
 
@@ -97,6 +99,10 @@ def main():
         "episode",
         y_data,
         "discounted return",
+        get_plot_file_path(
+            main_agent.name,
+            f"tr{training_episodes}_x{working_intervals}_t{test_episodes}",
+        ),
     )
 
     # test_env.save_video()

@@ -9,3 +9,6 @@ rooms.pyc
 
 # VS code setting
 .vscode
+
+# Everything in plots
+./plots
