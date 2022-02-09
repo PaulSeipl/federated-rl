@@ -154,6 +154,7 @@ Unverändert
 
 #### Lauf 4
 
+- **main Agent** hat ab und zu das Ziel erreicht (im eval modus)
 - sLg und sDg werden ingesamt immer besser mit kleineren Hängern zwischen durch
 - das weiter zu aufzuschreiben macht wahrscheinlich nur für plots Sinn, die ich klar analysieren, wo ich was rauslesen kann
 
