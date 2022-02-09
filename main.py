@@ -3,14 +3,19 @@ from src import rooms, a2c
 from plots.helper import create_main_plot, create_worker_plot
 import layouts.helper as layouts
 from src.train import train, episode
+from pathlib import Path
+
+SAVE_MODELS = True
+SAVE_PLOTS = True
+SAVE_VIDEOS = True
 
 
 def get_movie_file_path(room_file, max_steps):
     return f"movies/{room_file.replace('.txt', '')}_{max_steps}.mp4"
 
 
-def get_plot_file_path(name, max_steps):
-    return f"plots/{name}_{max_steps}"
+def get_plot_file_path(name, plot_path):
+    return f"{plot_path}/{name}"
 
 
 def get_parameters(env, name, alpha=0.001, gamma=0.99):
@@ -43,7 +48,7 @@ def main():
     working_intervals = 20
     test_episodes = 100
     max_steps = 100
-    rooms_dir = "9_9_4"
+    rooms_dir = "9_9_4_test"
     test_env, main_agent = initialize_main_agent(max_steps, rooms_dir)
 
     room_files = layouts.get_room_files(rooms_dir)
@@ -79,58 +84,53 @@ def main():
         working_intervals, training_episodes, worker_envs, worker_agents, main_agent
     )
 
-    for (name, worker_return) in worker_returns:
-        x_data = range(len(worker_return))
-        y_data = worker_return
-        plot_name = f"tr{training_episodes}_x{working_intervals}"
-        create_worker_plot(
-            f"Progress: Room {name}, {training_episodes*working_intervals} Trainingepisoden, Update nach {training_episodes}",
+    # run test with main_agent
+    main_agent.a2c_net.eval()
+    returns = [episode(test_env, main_agent, i) for i in range(test_episodes)]
+
+    if SAVE_PLOTS:
+        # create plot folder
+        plot_path = f"./plots/{rooms_dir}/tr{training_episodes}_x{working_intervals}_mSt{max_steps}"
+        Path(plot_path).mkdir(parents=True, exist_ok=True)
+
+        for (name, worker_return) in worker_returns:
+            x_data = range(len(worker_return))
+            y_data = worker_return
+            create_worker_plot(
+                f"Progress: Room {name}, {training_episodes*working_intervals} Trainingepisoden, Update nach {training_episodes}",
+                x_data,
+                "episode",
+                y_data,
+                "discounted return",
+                working_intervals,
+                training_episodes,
+                get_plot_file_path(name, plot_path),
+            )
+
+        x_data = range(test_episodes)
+        y_data = returns
+
+        create_main_plot(
+            f"Progress: {main_agent.name}",
             x_data,
             "episode",
             y_data,
             "discounted return",
-            working_intervals,
-            training_episodes,
             get_plot_file_path(
-                name,
-                plot_name,
+                main_agent.name,
+                plot_path,
             ),
         )
 
-    # run test with main_agent
-    # main_agent.a2c_net.eval()
-    returns = [episode(test_env, main_agent, i) for i in range(test_episodes)]
+    if SAVE_VIDEOS:
+        for env in worker_envs:
+            env.save_video()
+        test_env.save_video()
 
-    x_data = range(test_episodes)
-    y_data = returns
-
-    create_main_plot(
-        f"Progress: {main_agent.name}",
-        x_data,
-        "episode",
-        y_data,
-        "discounted return",
-        get_plot_file_path(
-            main_agent.name,
-            f"tr{training_episodes}_x{working_intervals}_t{test_episodes}",
-        ),
-    )
-
-    # test_env.save_video()
-    main_agent.save_net(
-        f"{rooms_dir}_tr{training_episodes}_x{working_intervals}_t{test_episodes}_{main_agent.name}"
-    )
-    # returns = [episode(env, agent, i) for i in range(training_episodes)]
-    # x_data = range(training_episodes)
-    # y_data = returns
-    # create_plot(
-    #     f"Progress: {env.movie_filename.replace('.mp4', '')}",
-    #     x_data,
-    #     "episode",
-    #     y_data,
-    #     "discounted return",
-    # )
-    # env.save_video()
+    if SAVE_MODELS:
+        main_agent.save_net(
+            f"{rooms_dir}_tr{training_episodes}_x{working_intervals}_t{test_episodes}_{main_agent.name}"
+        )
 
 
 if __name__ == "__main__":
