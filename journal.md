@@ -143,9 +143,36 @@ Unverändert
 #### Lauf 2 (ohne v5)
 
 - Ähnlich wie Lauf 1 nur alles intensiver. Bei den Räumen, wo man nach unten gehen muss, um das Ziel zu erreichen (v0,v2,v3) werden immer schneller bewältigt, während in den beiden anderen Räumen (v1,v4) nur selten oder gar nicht (vor allem ab dem 11. **Update**) das Ziel erreicht wird.
-
 - Auch zu beobachten ist, dass nach einem Update meistens ein paar Episoden benötigt werden, bis das Ziel wieder erreicht wird.
-
 - **main Agent** erreicht kein mal das Ziel
 
 #### Lauf 3
+
+- v2 und v3 werden nach jedem **Update** besser; v0 und **v1** werden ein bisschen besser
+- v4 wird bis zum dritten **Update** ein bisschen besser, aber nur in den späteren Episoden. Direkt nach den **Updates** braucht "er" immer länger um sich zu "fangen". Nach dem viertem **Update** wird ca. 500 Episoden nicht das Ziel erreicht und danach manchmal
+- v5 braucht nach jedem **Update** immer länger um sich zu "fangen", bis er nach dem 4.(letztem) **Update** kein mal mehr das Ziel erreciht
+
+#### Lauf 4
+
+- sLg und sDg werden ingesamt immer besser mit kleineren Hängern zwischen durch
+- das weiter zu aufzuschreiben macht wahrscheinlich nur für plots Sinn, die ich klar analysieren, wo ich was rauslesen kann
+
+### Diskussion/Vermutung
+
+- die Agenten, die vor dem ersten **Update** zufällig oder auch wegen einem einfacherem Raum schnell das Ziel finden und danach lernen das Ziel immer schnellerer zufinden, werden vorraussichtlich über die Updates bis zum Schluss immer besser/sicherer
+- es hat einen starken Einfluss, nach wie vielen Episoden man die Updates macht
+- eine Balance der Räume bringt zum Teil was aber zum Teil auch nicht
+- die Räume die von Anfang gut abschließen bleiben auch meisten gut, wahrscheinlich weil sie jeden "run" ihre Parameter festigen können anstatt wieder zufällig das Ziel zu finden.
+- ??Zum Teil scheints so als ob der Agent abhängig von seiner Startposition entscheidet wie er gehen wird??
+- Einfach den Durchschnitt nehmen ist nicht ausreichend
+
+### TODO
+
+- ~~Returns der Worker als Plot speichern~~
+- ~~Im Plott anzeigen, wann das Netz geupdated wurde (eine vertikale Linie)~~
+- THOMY SCHREIBEN!!!!!!!!
+- State dicts der Worker unterschiedlich gewichten (z.B. Worker, die seltener das Ziel erreichen, höher gewichten)
+- Main Agent Anhand von Räumen(~10 Räume) mit random S und G Punkten im interference modus testen
+- Main Agent nach jedem **Update** testen und einen Plot erstellen
+- Sachen aufschreiben wenn ich was Teste. Alle Daten sind relevant!!
+- <https://arxiv.org/pdf/2108.11887.pdf> lesen
