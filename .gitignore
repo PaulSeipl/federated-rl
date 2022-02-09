@@ -13,5 +13,7 @@ rooms.pyc
 # Everything in plots,models,movies ##TODO add tmp folder
 plots/*.svg
 plots/*.png
+plots/*.pdf
+plots/**/*
 models
 movies
