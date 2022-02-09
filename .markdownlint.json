@@ -1,0 +1,5 @@
+{
+  "default": true,
+  "line-length": { "line_length": 1000, "code_block_line_length": 1000 },
+  "no-duplicate-header": { "allow_different_nesting": true }
+}

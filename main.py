@@ -10,8 +10,8 @@ SAVE_PLOTS = True
 SAVE_VIDEOS = True
 
 
-def get_movie_file_path(room_file, max_steps):
-    return f"movies/{room_file.replace('.txt', '')}_{max_steps}.mp4"
+def get_movie_file_path(name, movie_path):
+    return f"{movie_path}/{name}.mp4"
 
 
 def get_plot_file_path(name, plot_path):
@@ -31,10 +31,11 @@ def get_parameters(env, name, alpha=0.001, gamma=0.99):
     }
 
 
-def initialize_main_agent(max_steps, rooms_dir):
+def initialize_main_agent(max_steps, rooms_dir, movie_path):
+    name = "t0"
     env = rooms.load_env(
         f"layouts/{rooms_dir}/test/t0.txt",
-        f"movies/t0.mp4",
+        get_movie_file_path(name, movie_path),
         max_steps,
     )
     agent = a2c.A2CLearner(get_parameters(env, "t0", alpha=0.001, gamma=0.99))
@@ -44,12 +45,17 @@ def initialize_main_agent(max_steps, rooms_dir):
 
 def main():
     # Setup file names
-    training_episodes = 500
-    working_intervals = 20
+    training_episodes = 1000
+    working_intervals = 10
     test_episodes = 100
     max_steps = 100
     rooms_dir = "9_9_4_test"
-    test_env, main_agent = initialize_main_agent(max_steps, rooms_dir)
+    custom_path = (
+        f"{rooms_dir}/tr{training_episodes}_x{working_intervals}_mSt{max_steps}"
+    )
+    plot_path = f"./plots/{custom_path}"
+    movie_path = f"./movies/{custom_path}"
+    test_env, main_agent = initialize_main_agent(max_steps, rooms_dir, movie_path)
 
     room_files = layouts.get_room_files(rooms_dir)
     print(f"room_files: {room_files}")
@@ -59,16 +65,16 @@ def main():
     parameterList = []
     worker_agents = []
     for room_file in room_files:
+        name = room_file.replace(".txt", "")
+
         env = rooms.load_env(
             layouts.get_room_path(rooms_dir, room_file),
-            get_movie_file_path(room_file, max_steps),
+            get_movie_file_path(name, movie_path),
             max_steps,
         )
         worker_envs.append(env)
 
-        parameter = get_parameters(
-            env, room_file.replace(".txt", ""), alpha=0.001, gamma=0.99
-        )
+        parameter = get_parameters(env, name, alpha=0.001, gamma=0.99)
 
         parameterList.append(parameter)
 
@@ -90,7 +96,6 @@ def main():
 
     if SAVE_PLOTS:
         # create plot folder
-        plot_path = f"./plots/{rooms_dir}/tr{training_episodes}_x{working_intervals}_mSt{max_steps}"
         Path(plot_path).mkdir(parents=True, exist_ok=True)
 
         for (name, worker_return) in worker_returns:
@@ -123,6 +128,8 @@ def main():
         )
 
     if SAVE_VIDEOS:
+        # create movie folder
+        Path(movie_path).mkdir(parents=True, exist_ok=True)
         for env in worker_envs:
             env.save_video()
         test_env.save_video()
