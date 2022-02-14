@@ -1,6 +1,10 @@
 import matplotlib.pyplot as plot
 
 
+def get_plot_file_path(name, plot_path):
+    return f"{plot_path}/{name}"
+
+
 def create_plot(title, x_label, y_label, plot_name):
     file_types = ["svg", "pdf", "png"]
     plot.title(title)

@@ -1,21 +1,14 @@
 from numpy.core.fromnumeric import mean
 from src import rooms, a2c
-from plots.helper import create_main_plot, create_worker_plot
+from plots.helper import create_main_plot, create_worker_plot, get_plot_file_path
 import layouts.helper as layouts
 from src.train import train, episode
 from pathlib import Path
-
-SAVE_MODELS = True
-SAVE_PLOTS = True
-SAVE_VIDEOS = True
+from config import *
 
 
-def get_movie_file_path(room_file, max_steps):
-    return f"movies/{room_file.replace('.txt', '')}_{max_steps}.mp4"
-
-
-def get_plot_file_path(name, plot_path):
-    return f"{plot_path}/{name}"
+def get_movie_file_path(name, movie_path):
+    return f"{movie_path}/{name}.mp4"
 
 
 def get_parameters(env, name, alpha=0.001, gamma=0.99):
@@ -31,10 +24,11 @@ def get_parameters(env, name, alpha=0.001, gamma=0.99):
     }
 
 
-def initialize_main_agent(max_steps, rooms_dir):
+def initialize_main_agent(max_steps, rooms_dir, movie_path):
+    name = "t0"
     env = rooms.load_env(
         f"layouts/{rooms_dir}/test/t0.txt",
-        f"movies/t0.mp4",
+        get_movie_file_path(name, movie_path),
         max_steps,
     )
     agent = a2c.A2CLearner(get_parameters(env, "t0", alpha=0.001, gamma=0.99))
@@ -43,15 +37,9 @@ def initialize_main_agent(max_steps, rooms_dir):
 
 
 def main():
-    # Setup file names
-    training_episodes = 500
-    working_intervals = 20
-    test_episodes = 100
-    max_steps = 100
-    rooms_dir = "9_9_4_test"
-    test_env, main_agent = initialize_main_agent(max_steps, rooms_dir)
+    test_env, main_agent = initialize_main_agent(MAX_STEPS, ROOMS_DIR, MOVIE_PATH)
 
-    room_files = layouts.get_room_files(rooms_dir)
+    room_files = layouts.get_room_files(ROOMS_DIR)
     print(f"room_files: {room_files}")
 
     # Domain and worker agents setup
@@ -59,16 +47,16 @@ def main():
     parameterList = []
     worker_agents = []
     for room_file in room_files:
+        name = room_file.replace(".txt", "")
+
         env = rooms.load_env(
-            layouts.get_room_path(rooms_dir, room_file),
-            get_movie_file_path(room_file, max_steps),
-            max_steps,
+            layouts.get_room_path(ROOMS_DIR, room_file),
+            get_movie_file_path(name, MOVIE_PATH),
+            MAX_STEPS,
         )
         worker_envs.append(env)
 
-        parameter = get_parameters(
-            env, room_file.replace(".txt", ""), alpha=0.001, gamma=0.99
-        )
+        parameter = get_parameters(env, name, alpha=0.001, gamma=0.99)
 
         parameterList.append(parameter)
 
@@ -81,33 +69,37 @@ def main():
 
     # run x "training_episodes" for every agent "working_intervals" times
     worker_returns = train(
-        working_intervals, training_episodes, worker_envs, worker_agents, main_agent
+        WORKING_INTERVALS,
+        TRAINING_EPISODES,
+        worker_envs,
+        worker_agents,
+        main_agent,
+        test_env,
     )
 
     # run test with main_agent
     main_agent.a2c_net.eval()
-    returns = [episode(test_env, main_agent, i) for i in range(test_episodes)]
+    returns = [episode(test_env, main_agent, i) for i in range(TEST_EPISODES)]
 
     if SAVE_PLOTS:
         # create plot folder
-        plot_path = f"./plots/{rooms_dir}/tr{training_episodes}_x{working_intervals}_mSt{max_steps}"
-        Path(plot_path).mkdir(parents=True, exist_ok=True)
+        Path(PLOT_PATH).mkdir(parents=True, exist_ok=True)
 
         for (name, worker_return) in worker_returns:
             x_data = range(len(worker_return))
             y_data = worker_return
             create_worker_plot(
-                f"Progress: Room {name}, {training_episodes*working_intervals} Trainingepisoden, Update nach {training_episodes}",
+                f"Progress: Room {name}, {TRAINING_EPISODES*WORKING_INTERVALS} Trainingepisoden, Update nach {TRAINING_EPISODES}",
                 x_data,
                 "episode",
                 y_data,
                 "discounted return",
-                working_intervals,
-                training_episodes,
-                get_plot_file_path(name, plot_path),
+                WORKING_INTERVALS,
+                TRAINING_EPISODES,
+                get_plot_file_path(name, PLOT_PATH),
             )
 
-        x_data = range(test_episodes)
+        x_data = range(TEST_EPISODES)
         y_data = returns
 
         create_main_plot(
@@ -118,18 +110,20 @@ def main():
             "discounted return",
             get_plot_file_path(
                 main_agent.name,
-                plot_path,
+                PLOT_PATH,
             ),
         )
 
     if SAVE_VIDEOS:
+        # create movie folder
+        Path(MOVIE_PATH).mkdir(parents=True, exist_ok=True)
         for env in worker_envs:
             env.save_video()
         test_env.save_video()
 
     if SAVE_MODELS:
         main_agent.save_net(
-            f"{rooms_dir}_tr{training_episodes}_x{working_intervals}_t{test_episodes}_{main_agent.name}"
+            f"{ROOMS_DIR}_tr{TRAINING_EPISODES}_x{WORKING_INTERVALS}_t{TEST_EPISODES}_{main_agent.name}"
         )
 
 
