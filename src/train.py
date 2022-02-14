@@ -1,3 +1,9 @@
+from pathlib import Path
+from config import SAVE_PLOTS
+from plots.helper import create_main_plot, get_plot_file_path
+from config import PLOT_PATH, TEST_EPISODES
+
+
 def episode(env, agent, nr_episode=0, increment=0):
     state = env.reset()
     discounted_return = 0
@@ -19,7 +25,14 @@ def episode(env, agent, nr_episode=0, increment=0):
     return discounted_return
 
 
-def train(working_intervals, training_episodes, worker_envs, worker_agents, main_agent):
+def train(
+    working_intervals,
+    training_episodes,
+    worker_envs,
+    worker_agents,
+    main_agent,
+    main_env,
+):
     worker_returns = [(worker_agent.name, []) for worker_agent in worker_agents]
     for interval in range(working_intervals):
         worker_state_dicts = []
@@ -49,4 +62,33 @@ def train(working_intervals, training_episodes, worker_envs, worker_agents, main
         # set main_agent state dict
         main_agent.load_state_dict(mean_state_dict)
 
+        if interval != working_intervals:
+            # test main agent
+            test_agent(main_agent, main_env, interval + 1)  # TODO create random env
+
     return worker_returns
+
+
+def test_agent(agent, env, updates=0):
+    update_str = "update" if updates == 1 else "updates"
+    # run test with main_agent
+    agent.a2c_net.eval()
+    returns = [episode(env, agent, i) for i in range(TEST_EPISODES)]
+    agent.a2c_net.train()
+
+    if SAVE_PLOTS:
+        Path(PLOT_PATH).mkdir(parents=True, exist_ok=True)
+        x_data = range(TEST_EPISODES)
+        y_data = returns
+
+        create_main_plot(
+            f"Progress: {agent.name} after {updates} {update_str}",
+            x_data,
+            "episode",
+            y_data,
+            "discounted return",
+            get_plot_file_path(
+                f"{agent.name}_after{updates}{update_str}",
+                PLOT_PATH,
+            ),
+        )

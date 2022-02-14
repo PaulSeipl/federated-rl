@@ -171,9 +171,9 @@ Unverändert
 
 - ~~Returns der Worker als Plot speichern~~
 - ~~Im Plott anzeigen, wann das Netz geupdated wurde (eine vertikale Linie)~~
-- THOMY SCHREIBEN!!!!!!!!
+- ~~THOMY SCHREIBEN!!!!!!!!~~
+- ~~Main Agent nach jedem **Update** testen und einen Plot erstellen~~
 - State dicts der Worker unterschiedlich gewichten (z.B. Worker, die seltener das Ziel erreichen, höher gewichten)
 - Main Agent Anhand von Räumen(~10 Räume) mit random S und G Punkten im interference modus testen
-- Main Agent nach jedem **Update** testen und einen Plot erstellen
 - Sachen aufschreiben wenn ich was Teste. Alle Daten sind relevant!!
 - <https://arxiv.org/pdf/2108.11887.pdf> lesen
