@@ -177,3 +177,16 @@ Unverändert
 - Main Agent Anhand von Räumen(~10 Räume) mit random S und G Punkten im interference modus testen
 - Sachen aufschreiben wenn ich was Teste. Alle Daten sind relevant!!
 - <https://arxiv.org/pdf/2108.11887.pdf> lesen
+
+## 16. Februar
+
+### Stand
+
+Neuen Weg hinzugefügt, wie die Modelle zusammengefügt werden. Je öfter der Agent das Ziel nicht erreicht hat, desto mehr werden seine weights wahrgenommen/miteinberechnet.
+
+### Todo
+
+- a2c: speicher episoden im buffer. netz nach ungeäfhr 10. done flags mit buffer updaten
+- update aus ganzem buffer
+- Permutation vom raum
+- gewichted nach gewinn

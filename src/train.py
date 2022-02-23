@@ -52,17 +52,17 @@ def train(
             # safe worker state_dict
             worker_state_dicts.append(worker.get_state_dict_copy())
 
-        # calculate mean of the state_dicts
-        mean_state_dict = {}
-        for key in main_agent.get_state_dict().keys():
-            mean_state_dict[key] = sum(
-                [worker_state_dict[key] for worker_state_dict in worker_state_dicts]
-            ) / len(worker_state_dicts)
-
         # set main_agent state dict
-        main_agent.load_state_dict(mean_state_dict)
+        main_state_dict = zero_weighted_aggregate(
+            main_agent.get_state_dict().keys(),
+            worker_state_dicts,
+            worker_returns,
+            training_episodes,
+        )
 
-        if interval != working_intervals:
+        main_agent.load_state_dict(main_state_dict)
+
+        if interval != working_intervals - 1:
             # test main agent
             test_agent(main_agent, main_env, interval + 1)  # TODO create random env
 
@@ -92,3 +92,44 @@ def test_agent(agent, env, updates=0):
                 PLOT_PATH,
             ),
         )
+
+
+def average(main_agent_state_dict_keys, worker_state_dicts):
+    # calculate mean of the state_dicts (calculation manually checked, works)
+    mean_state_dict = {}
+    for key in main_agent_state_dict_keys:
+        mean_state_dict[key] = sum(
+            [worker_state_dict[key] for worker_state_dict in worker_state_dicts]
+        ) / len(worker_state_dicts)
+
+    return mean_state_dict
+
+
+def get_weighted_distribution(worker_returns, separator=0):
+    # count zeros
+    zeros_count = [
+        worker_return[-separator:].count(0) for _, worker_return in worker_returns
+    ]
+    print(f"zeros_count: \n{zeros_count}")
+    return [zero_count / sum(zeros_count) for zero_count in zeros_count]
+
+
+# je öfter der Agent das Ziel nicht erreicht hat, desto mehr werden seine weights wahrgenommen/miteinberechnet
+def zero_weighted_aggregate(
+    main_agent_state_dict_keys, worker_state_dicts, worker_returns, separator=0
+):
+    # get distribution (adds up to 1 of workers)
+    weighted_distribution = get_weighted_distribution(worker_returns, separator)
+    print(f"weighted_distribution: \n{weighted_distribution}")
+    mean_state_dict = {}
+    for key in main_agent_state_dict_keys:
+        mean_state_dict[key] = sum(
+            [
+                worker_state_dict[key] * multiplicator
+                for worker_state_dict, multiplicator in zip(
+                    worker_state_dicts, weighted_distribution
+                )
+            ]
+        )
+
+    return mean_state_dict
