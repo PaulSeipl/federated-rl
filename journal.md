@@ -184,9 +184,9 @@ Unverändert
 
 Neuen Weg hinzugefügt, wie die Modelle zusammengefügt werden. Je öfter der Agent das Ziel nicht erreicht hat, desto mehr werden seine weights wahrgenommen/miteinberechnet.
 
-### Todo
+### TODO
 
 - a2c: speicher episoden im buffer. netz nach ungeäfhr 10. done flags mit buffer updaten
 - update aus ganzem buffer
 - Permutation vom raum
-- gewichted nach gewinn
+- ~~gewichted nach gewinn~~

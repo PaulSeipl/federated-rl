@@ -1,7 +1,12 @@
 from pathlib import Path
-from config import SAVE_PLOTS
+from config import (
+    AGGREATION_TYPES,
+    SAVE_PLOTS,
+    PLOT_PATH,
+    TEST_EPISODES,
+    AGGREATION_TYPE,
+)
 from plots.helper import create_main_plot, get_plot_file_path
-from config import PLOT_PATH, TEST_EPISODES
 
 
 def episode(env, agent, nr_episode=0, increment=0):
@@ -52,13 +57,28 @@ def train(
             # safe worker state_dict
             worker_state_dicts.append(worker.get_state_dict_copy())
 
-        # set main_agent state dict
-        main_state_dict = zero_weighted_aggregate(
-            main_agent.get_state_dict().keys(),
-            worker_state_dicts,
-            worker_returns,
-            training_episodes,
-        )
+        main_state_dict = {}
+        # set main state dict
+        if AGGREATION_TYPE == AGGREATION_TYPES[1]:
+            main_state_dict = average(
+                main_agent.get_state_dict().keys(), worker_state_dicts
+            )
+
+        if AGGREATION_TYPE == AGGREATION_TYPES[2]:
+            main_state_dict = zero_weighted_aggregate(
+                main_agent.get_state_dict().keys(),
+                worker_state_dicts,
+                worker_returns,
+                training_episodes,
+            )
+
+        if AGGREATION_TYPE == AGGREATION_TYPES[3]:
+            main_state_dict = positive_weighted_aggregate(
+                main_agent.get_state_dict().keys(),
+                worker_state_dicts,
+                worker_returns,
+                training_episodes,
+            )
 
         main_agent.load_state_dict(main_state_dict)
 
@@ -105,7 +125,7 @@ def average(main_agent_state_dict_keys, worker_state_dicts):
     return mean_state_dict
 
 
-def get_weighted_distribution(worker_returns, separator=0):
+def get_weighted_zero_distribution(worker_returns, separator=0):
     # count zeros
     zeros_count = [
         worker_return[-separator:].count(0) for _, worker_return in worker_returns
@@ -118,9 +138,39 @@ def get_weighted_distribution(worker_returns, separator=0):
 def zero_weighted_aggregate(
     main_agent_state_dict_keys, worker_state_dicts, worker_returns, separator=0
 ):
-    # get distribution (adds up to 1 of workers)
-    weighted_distribution = get_weighted_distribution(worker_returns, separator)
+    # get distribution (adds up to 1)
+    weighted_distribution = get_weighted_zero_distribution(worker_returns, separator)
     print(f"weighted_distribution: \n{weighted_distribution}")
+    mean_state_dict = {}
+    for key in main_agent_state_dict_keys:
+        mean_state_dict[key] = sum(
+            [
+                worker_state_dict[key] * multiplicator
+                for worker_state_dict, multiplicator in zip(
+                    worker_state_dicts, weighted_distribution
+                )
+            ]
+        )
+
+    return mean_state_dict
+
+
+def positive_weighted_aggregate(
+    main_agent_state_dict_keys, worker_state_dicts, worker_returns, separator=0
+):
+    # get distribution (adds up to 1)
+    # count numbers bigger then 0
+    trues_count = [
+        len(list(filter(bool, worker_return[-separator:])))
+        for _, worker_return in worker_returns
+    ]
+    print("true_count: ", trues_count)
+    weighted_distribution = [
+        true_count / sum(trues_count) for true_count in trues_count
+    ]
+
+    print(f"weighted_distribution: \n{weighted_distribution}")
+
     mean_state_dict = {}
     for key in main_agent_state_dict_keys:
         mean_state_dict[key] = sum(
