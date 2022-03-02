@@ -19,6 +19,8 @@ def get_parameters(env, name, alpha=0.001, gamma=0.99):
         # Hyperparameters
         "alpha": alpha,  # learning rate
         "gamma": gamma,  # discount factor
+        # update timer
+        "max_done_counter": 10,
         # "id"
         "name": name,
     }
