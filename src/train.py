@@ -9,7 +9,7 @@ from config import (
 from plots.helper import create_main_plot, get_plot_file_path
 
 
-def episode(env, agent, nr_episode=0, increment=0):
+def episode(env, agent, nr_episode=0, increment=0, isTraining=True):
     state = env.reset()
     discounted_return = 0
     discount_factor = 0.99
@@ -22,7 +22,8 @@ def episode(env, agent, nr_episode=0, increment=0):
         # 2. Execute selected action
         next_state, reward, done, _ = env.step(action)
         # 3. Integrate new experience into agent
-        agent.update(state, action, reward, next_state, done)
+        if isTraining:
+            agent.update(state, action, reward, next_state, done)
         state = next_state
         discounted_return += reward * (discount_factor ** time_step)
         time_step += 1
@@ -93,7 +94,7 @@ def test_agent(agent, env, updates=0):
     update_str = "update" if updates == 1 else "updates"
     # run test with main_agent
     agent.a2c_net.eval()
-    returns = [episode(env, agent, i) for i in range(TEST_EPISODES)]
+    returns = [episode(env, agent, i, isTraining=False) for i in range(TEST_EPISODES)]
     agent.a2c_net.train()
 
     if SAVE_PLOTS:

@@ -184,9 +184,23 @@ Unverändert
 
 Neuen Weg hinzugefügt, wie die Modelle zusammengefügt werden. Je öfter der Agent das Ziel nicht erreicht hat, desto mehr werden seine weights wahrgenommen/miteinberechnet.
 
+## Other Day
+
 ### TODO
 
-- a2c: speicher episoden im buffer. netz nach ungeäfhr 10. done flags mit buffer updaten
-- update aus ganzem buffer
+- ~~a2c: speicher episoden im batch. netz nach ungeäfhr 10. done flag mit batch updaten~~
+- ~~update aus ganzem batch~~
 - Permutation vom raum
 - ~~gewichted nach gewinn~~
+
+### Quetion to Thomy
+
+```js
+// When?
+self.optimizer.zero_grad()
+loss.backward()
+self.optimizer.step()
+```
+
+- updaten nach X erfolgreichen dones?
+- transitions beim updaten vereinen?

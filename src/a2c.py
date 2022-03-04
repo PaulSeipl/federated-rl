@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
-from copy import deepcopy
+from copy import copy, deepcopy
 
 
 class A2CNet(nn.Module):
@@ -40,7 +40,10 @@ class A2CLearner:
         self.nr_actions = params["nr_actions"]
         self.alpha = params["alpha"]
         self.nr_input_features = numpy.prod(params["nr_input_features"])
+        self.max_done_counter = params["max_done_counter"]
+        self.done_counter = 0
         self.transitions = []
+        self.batch = []
         self.device = torch.device("cpu")
         self.a2c_net = A2CNet(self.nr_input_features, self.nr_actions).to(self.device)
         self.optimizer = torch.optim.Adam(self.a2c_net.parameters(), lr=params["alpha"])
@@ -106,43 +109,53 @@ class A2CLearner:
     def update(self, state, action, reward, next_state, done):
         self.transitions.append((state, action, reward, next_state, done))
         loss = None
+
         if done:
-            states, actions, rewards, next_states, dones = tuple(zip(*self.transitions))
-            discounted_returns = []
-
-            # Calculate and normalize discounted returns
-            R = 0
-            for reward in reversed(rewards):
-                R = reward + self.gamma * R
-                discounted_returns.append(R)
-            discounted_returns.reverse()
-            states = states
-            next_states = next_states
-            rewards = torch.tensor(rewards, device=self.device, dtype=torch.float)
-            discounted_returns = torch.tensor(
-                discounted_returns, device=self.device, dtype=torch.float
-            ).detach()
-            normalized_returns = discounted_returns - discounted_returns.mean()
-            normalized_returns /= discounted_returns.std() + self.eps
-
-            # Calculate losses of policy and value function
-            actions = torch.tensor(actions, device=self.device, dtype=torch.long)
-            action_probs, state_values = self.predict_policy(states)
-            states = torch.tensor(states, device=self.device, dtype=torch.float)
-            policy_losses = []
-            value_losses = []
-            for probs, action, value, R in zip(
-                action_probs, actions, state_values, normalized_returns
-            ):
-                advantage = R - value.item()
-                m = Categorical(probs)
-                policy_losses.append(-m.log_prob(action) * advantage)
-                value_losses.append(F.smooth_l1_loss(value, torch.tensor([R])))
-            loss = torch.stack(policy_losses).sum() + torch.stack(value_losses).sum()
-
-            # Optimize joint loss
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
+            self.done_counter += 1
+            self.batch.append(deepcopy(self.transitions))
             self.transitions.clear()
-        return loss
+
+        if self.done_counter == self.max_done_counter:
+            self.done_counter = 0
+
+            for transitions in self.batch:
+                states, actions, rewards, next_states, dones = tuple(zip(*transitions))
+                discounted_returns = []
+
+                # Calculate and normalize discounted returns
+                R = 0
+                for reward in reversed(rewards):
+                    R = reward + self.gamma * R
+                    discounted_returns.append(R)
+                discounted_returns.reverse()
+                states = states
+                next_states = next_states
+                rewards = torch.tensor(rewards, device=self.device, dtype=torch.float)
+                discounted_returns = torch.tensor(
+                    discounted_returns, device=self.device, dtype=torch.float
+                ).detach()
+                normalized_returns = discounted_returns - discounted_returns.mean()
+                normalized_returns /= discounted_returns.std() + self.eps
+
+                # Calculate losses of policy and value function
+                actions = torch.tensor(actions, device=self.device, dtype=torch.long)
+                action_probs, state_values = self.predict_policy(states)
+                states = torch.tensor(states, device=self.device, dtype=torch.float)
+                policy_losses = []
+                value_losses = []
+                for probs, action, value, R in zip(
+                    action_probs, actions, state_values, normalized_returns
+                ):
+                    advantage = R - value.item()
+                    m = Categorical(probs)
+                    policy_losses.append(-m.log_prob(action) * advantage)
+                    value_losses.append(F.smooth_l1_loss(value, torch.tensor([R])))
+                loss = (
+                    torch.stack(policy_losses).sum() + torch.stack(value_losses).sum()
+                )
+
+                # Optimize joint loss
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
+            self.batch.clear()
