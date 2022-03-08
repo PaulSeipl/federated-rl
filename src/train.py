@@ -58,6 +58,9 @@ def train(
             # safe worker state_dict
             worker_state_dicts.append(worker.get_state_dict_copy())
 
+            # rotate workers env
+            env.rotate_map()
+
         main_state_dict = {}
         # set main state dict
         if AGGREATION_TYPE == AGGREATION_TYPES[1]:
