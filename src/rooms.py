@@ -26,6 +26,7 @@ NR_CHANNELS = len([AGENT_CHANNEL, GOAL_CHANNEL, OBSTACLE_CHANNEL])
 class RoomsEnv(gym.Env):
     def __init__(
         self,
+        content,
         width,
         height,
         start_position,
@@ -36,6 +37,7 @@ class RoomsEnv(gym.Env):
         movie_filename=None,
     ):
         self.seed()
+        self.content = content
         self.movie_filename = movie_filename
         self.action_space = spaces.Discrete(len(ROOMS_ACTIONS))
         self.observation_space = spaces.Box(
@@ -121,12 +123,23 @@ class RoomsEnv(gym.Env):
         self.state_history.clear()
         return self.state()
 
+    def rotate_map(self):
+        (
+            self.content,
+            self.width,
+            self.height,
+            self.start_position,
+            self.goal_position,
+            self.obstacles,
+        ) = read_map_content(rotate(self.content))
+        self.reset()
+
     def state_summary(self, state):
         return {
             "agent_x": self.agent_position[0],
-            "agent_y": self.agent_position[0],
+            "agent_y": self.agent_position[1],
             "goal_x": self.goal_position[0],
-            "goal_y": self.goal_position[0],
+            "goal_y": self.goal_position[1],
             "is_subgoal": self.is_subgoal(state),
             "time_step": self.time,
             "score": self.undiscounted_return,
@@ -159,18 +172,23 @@ class RoomsEnv(gym.Env):
             animation.write_videofile(self.movie_filename, fps=frames_per_second)
 
 
-def read_map_file(path):
+def load_map_file(path):
     file = pathlib.Path(path)
     assert file.is_file()
     with open(path) as f:
         content = f.readlines()
+    content = [line.strip().split() for line in content]
+    return content
+
+
+def read_map_content(content):
     start_position = (1, 1)
     goal_position = None
     obstacles = []
     width = 0
     height = 0
     for y, line in enumerate(content):
-        for x, cell in enumerate(line.strip().split()):
+        for x, cell in enumerate(line):
             if cell == "#":
                 obstacles.append((x, y))
             if cell.lower() == "s":
@@ -183,12 +201,16 @@ def read_map_file(path):
     height += 1
     if not (goal_position):
         goal_position = (width - 2, height - 2)
-    return width, height, start_position, goal_position, obstacles
+    return content, width, height, start_position, goal_position, obstacles
 
 
 def load_env(path, movie_filename, time_limit=100, stochastic=False):
-    width, height, start_position, goal_position, obstacles = read_map_file(path)
+    content = load_map_file(path)
+    content, width, height, start_position, goal_position, obstacles = read_map_content(
+        content
+    )
     return RoomsEnv(
+        content,
         width,
         height,
         start_position,
@@ -198,3 +220,7 @@ def load_env(path, movie_filename, time_limit=100, stochastic=False):
         stochastic,
         movie_filename,
     )
+
+
+def rotate(m):
+    return [list(i) for i in zip(*reversed(m))]
