@@ -11,14 +11,13 @@ from plots.helper import create_main_plot, get_plot_file_path
 
 def episode(env, agent, nr_episode=0, increment=0, isTraining=True):
     state = env.reset()
+    policy_func = agent.policy if isTraining else agent.policy_test
     discounted_return = 0
     discount_factor = 0.99
     done = False
     time_step = 0
     while not done:
-        # env.render()
-        # 1. Select action according to policy
-        action = agent.policy(state)
+        action = policy_func(state)
         # 2. Execute selected action
         next_state, reward, done, _ = env.step(action)
         # 3. Integrate new experience into agent
@@ -37,7 +36,7 @@ def train(
     worker_envs,
     worker_agents,
     main_agent,
-    main_env,
+    test_envs,
 ):
     worker_returns = [(worker_agent.name, []) for worker_agent in worker_agents]
     for interval in range(working_intervals):
@@ -47,16 +46,19 @@ def train(
             worker.load_state_dict(main_agent.get_state_dict_copy())
 
             # run {training_episodes} episodes for each agent
-
-            [
+            for i in range(training_episodes):
                 worker_returns[index][1].append(
                     episode(env, worker, i, interval * training_episodes)
                 )
-                for i in range(training_episodes)
-            ]
+                # rotate map after every episode
+                env.rotate_map_random()
 
             # safe worker state_dict
             worker_state_dicts.append(worker.get_state_dict_copy())
+
+            # rotate workers env after every aggregation
+            # if index < working_intervals:
+            #     env.rotate_map_random()
 
         main_state_dict = {}
         # set main state dict
@@ -85,27 +87,27 @@ def train(
 
         if interval != working_intervals - 1:
             # test main agent
-            test_agent(main_agent, main_env, interval + 1)  # TODO create random env
+            test_agent(main_agent, test_envs, interval + 1)
 
     return worker_returns
 
 
-def test_agent(agent, env, updates=0):
+def test_agent(agent, envs, updates=0):
     update_str = "update" if updates == 1 else "updates"
     # run test with main_agent
     agent.a2c_net.eval()
-    returns = [episode(env, agent, i, isTraining=False) for i in range(TEST_EPISODES)]
+    returns = [episode(env, agent, 0, isTraining=False) for env in envs]
     agent.a2c_net.train()
 
     if SAVE_PLOTS:
         Path(PLOT_PATH).mkdir(parents=True, exist_ok=True)
-        x_data = range(TEST_EPISODES)
+        x_data = [env.name for env in envs]
         y_data = returns
 
         create_main_plot(
             f"Progress: {agent.name} after {updates} {update_str}",
             x_data,
-            "episode",
+            "test room",
             y_data,
             "discounted return",
             get_plot_file_path(

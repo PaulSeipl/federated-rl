@@ -1,3 +1,4 @@
+from copy import deepcopy
 from numpy.core.fromnumeric import mean
 from src import rooms, a2c
 from plots.helper import create_main_plot, create_worker_plot, get_plot_file_path
@@ -26,20 +27,42 @@ def get_parameters(env, name, alpha=0.001, gamma=0.99):
     }
 
 
-def initialize_main_agent(max_steps, rooms_dir, movie_path):
-    name = "t0"
-    env = rooms.load_env(
-        f"layouts/{rooms_dir}/test/t0.txt",
-        get_movie_file_path(name, movie_path),
-        max_steps,
+def initialize_main_agent(test_env):
+    return a2c.A2CLearner(
+        get_parameters(test_env, "main_agent", alpha=0.001, gamma=0.99)
     )
-    agent = a2c.A2CLearner(get_parameters(env, "t0", alpha=0.001, gamma=0.99))
-    # agent.a2c_net.train(False)
-    return env, agent
+
+
+def get_test_envs(rooms_dir, movie_path):
+    test_rooms_dir = f"{rooms_dir}/test"
+    test_room_files = layouts.get_room_files(test_rooms_dir)
+
+    test_envs = []
+    # get every test room file
+    for test_room_file in test_room_files:
+        name = test_room_file.replace(".txt", "_0")
+
+        test_env = rooms.load_env(
+            layouts.get_room_path(test_rooms_dir, test_room_file),
+            get_movie_file_path(name, movie_path),
+            MAX_STEPS,
+            room_name=name,
+        )
+
+        test_envs.append(test_env)
+        # rotate every test room env and save it as own test room env
+        for i in range(1, 4):
+            temp_env = deepcopy(test_env)
+            for _ in range(i):
+                temp_env.rotate_map()
+            temp_env.name = temp_env.name.replace("_0", f"_{i}")
+            test_envs.append(temp_env)
+    return test_envs
 
 
 def main():
-    test_env, main_agent = initialize_main_agent(MAX_STEPS, ROOMS_DIR, MOVIE_PATH)
+    test_envs = get_test_envs(ROOMS_DIR, MOVIE_PATH)
+    main_agent = initialize_main_agent(test_envs[0])
 
     room_files = layouts.get_room_files(ROOMS_DIR)
     print(f"room_files: {room_files}")
@@ -76,12 +99,14 @@ def main():
         worker_envs,
         worker_agents,
         main_agent,
-        test_env,
+        test_envs,
     )
 
     # run test with main_agent
     main_agent.a2c_net.eval()
-    returns = [episode(test_env, main_agent, i) for i in range(TEST_EPISODES)]
+    returns = [
+        episode(test_env, main_agent, 0, isTraining=False) for test_env in test_envs
+    ]
 
     if SAVE_PLOTS:
         # create plot folder
@@ -101,17 +126,17 @@ def main():
                 get_plot_file_path(name, PLOT_PATH),
             )
 
-        x_data = range(TEST_EPISODES)
+        x_data = [test_env.name for test_env in test_envs]
         y_data = returns
 
         create_main_plot(
             f"Progress: {main_agent.name}",
             x_data,
-            "episode",
+            "test room",
             y_data,
             "discounted return",
             get_plot_file_path(
-                main_agent.name,
+                f"{main_agent.name}",
                 PLOT_PATH,
             ),
         )
@@ -119,9 +144,8 @@ def main():
     if SAVE_VIDEOS:
         # create movie folder
         Path(MOVIE_PATH).mkdir(parents=True, exist_ok=True)
-        for env in worker_envs:
+        for env in worker_envs + test_envs:
             env.save_video()
-        test_env.save_video()
 
     if SAVE_MODELS:
         main_agent.save_net(

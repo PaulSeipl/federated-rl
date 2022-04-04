@@ -31,6 +31,7 @@ def create_worker_plot(
 
 
 def create_main_plot(title, x_data, x_label, y_data, y_label, plot_name):
-    plot.rcParams["figure.figsize"] = [6, 10]
-    plot.plot(x_data, y_data)
+    plot.rcParams["figure.figsize"] = [12, 6]
+    plot.scatter(x_data, y_data)
+    plot.xticks(x_data, [str(i) for i in x_data], rotation=90)
     create_plot(title, x_label, y_label, plot_name)

@@ -190,7 +190,7 @@ Neuen Weg hinzugefügt, wie die Modelle zusammengefügt werden. Je öfter der Ag
 
 - ~~a2c: speicher episoden im batch. netz nach ungeäfhr 10. done flag mit batch updaten~~
 - ~~update aus ganzem batch~~
-- Permutation vom raum
+- ~~Permutation vom raum~~
 - ~~gewichted nach gewinn~~
 
 ### Quetion to Thomy
@@ -202,5 +202,7 @@ loss.backward()
 self.optimizer.step()
 ```
 
-- updaten nach X erfolgreichen dones?
-- transitions beim updaten vereinen?
+- updaten nach X erfolgreichen dones? testen mit 1,5,10,20
+- raum wann drehen? nach x erfolgreichen dones? nach jedem gesamt update? -> nach jedem reset: DONE
+- andere aggregation? erstmal nicht
+- change architecture? weiter investigieren
