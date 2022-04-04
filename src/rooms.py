@@ -35,6 +35,7 @@ class RoomsEnv(gym.Env):
         time_limit,
         stochastic=False,
         movie_filename=None,
+        name="",
     ):
         self.seed()
         self.content = content
@@ -55,6 +56,7 @@ class RoomsEnv(gym.Env):
         self.stochastic = stochastic
         self.undiscounted_return = 0
         self.state_history = []
+        self.name = name
         self.reset()
 
     def is_subgoal(self, state):
@@ -124,6 +126,7 @@ class RoomsEnv(gym.Env):
         return self.state()
 
     def rotate_map(self):
+        dif_cont = rotate(self.content)
         (
             self.content,
             self.width,
@@ -131,7 +134,21 @@ class RoomsEnv(gym.Env):
             self.start_position,
             self.goal_position,
             self.obstacles,
-        ) = read_map_content(rotate(self.content))
+        ) = read_map_content(dif_cont)
+        self.reset()
+
+    def rotate_map_random(self):
+        dif_cont = self.content
+        for _ in range(random.randint(0, 3)):
+            dif_cont = rotate(dif_cont)
+        (
+            self.content,
+            self.width,
+            self.height,
+            self.start_position,
+            self.goal_position,
+            self.obstacles,
+        ) = read_map_content(dif_cont)
         self.reset()
 
     def state_summary(self, state):
@@ -144,6 +161,9 @@ class RoomsEnv(gym.Env):
             "time_step": self.time,
             "score": self.undiscounted_return,
         }
+
+    def print_map(self):
+        [print(line) for line in self.content]
 
     def save_video(self):
         if self.movie_filename is not None:
@@ -204,7 +224,7 @@ def read_map_content(content):
     return content, width, height, start_position, goal_position, obstacles
 
 
-def load_env(path, movie_filename, time_limit=100, stochastic=False):
+def load_env(path, movie_filename, time_limit=100, stochastic=False, room_name=""):
     content = load_map_file(path)
     content, width, height, start_position, goal_position, obstacles = read_map_content(
         content
@@ -219,6 +239,7 @@ def load_env(path, movie_filename, time_limit=100, stochastic=False):
         time_limit,
         stochastic,
         movie_filename,
+        name=room_name,
     )
 
 
