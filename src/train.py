@@ -3,15 +3,20 @@ from config import (
     AGGREATION_TYPES,
     SAVE_PLOTS,
     PLOT_PATH,
+    TEST_DIR,
     TEST_EPISODES,
     AGGREATION_TYPE,
+    TEST_STOCHASTIC,
+    TRAINING_EPISODES,
 )
-from plots.helper import create_main_plot, get_plot_file_path
+from plots.helper import create_main_plot, get_plot_file_path, save_test_data
 
 
 def episode(env, agent, nr_episode=0, increment=0, isTraining=True):
     state = env.reset()
-    policy_func = agent.policy if isTraining else agent.policy_test
+    policy_func = (
+        agent.policy if isTraining or TEST_STOCHASTIC else agent.policy_deterministic
+    )
     discounted_return = 0
     discount_factor = 0.99
     done = False
@@ -87,15 +92,52 @@ def train(
 
         if interval != working_intervals - 1:
             # test main agent
-            test_agent(main_agent, test_envs, interval + 1)
+            if TEST_STOCHASTIC:
+                test_agent_stochastic(main_agent, test_envs, interval + 1)
+            else:
+                test_agent_deterministic(main_agent, test_envs, interval + 1)
 
     return worker_returns
 
 
-def test_agent(agent, envs, updates=0):
+def test_agent_stochastic(agent, envs, updates):
     update_str = "update" if updates == 1 else "updates"
     # run test with main_agent
     agent.a2c_net.eval()
+    returns = []
+    for env in envs:
+        agent.name = env.name
+        returns.append(
+            [episode(env, agent, i, isTraining=False) for i in range(TEST_EPISODES)]
+        )
+    agent.name = "main_agent"
+    agent.a2c_net.train()
+
+    if SAVE_PLOTS:
+        Path(PLOT_PATH).mkdir(parents=True, exist_ok=True)
+        x_data = [env.name for env in envs]
+        y_data = []
+        for data in returns:
+            y_data.append(sum(data) / len(data))
+
+        create_main_plot(
+            f"Progress: {agent.name} after {updates} {update_str} on {TEST_DIR} test rooms",
+            x_data,
+            "test room",
+            y_data,
+            f"average discounted return of {TEST_EPISODES} episodes",
+            get_plot_file_path(
+                f"{agent.name}_after{updates}{update_str}",
+                PLOT_PATH,
+            ),
+        )
+        save_test_data(x_data, returns, updates)
+
+
+def test_agent_deterministic(agent, envs, updates=0):
+    update_str = "update" if updates == 1 else "updates"
+    # run test with main_agent
+    agent.a2c_net.eval()  # TODO STOCHASTIC: Add test episodes
     returns = [episode(env, agent, 0, isTraining=False) for env in envs]
     agent.a2c_net.train()
 
@@ -105,7 +147,7 @@ def test_agent(agent, envs, updates=0):
         y_data = returns
 
         create_main_plot(
-            f"Progress: {agent.name} after {updates} {update_str}",
+            f"Progress: {agent.name} after {updates} {update_str} on {TEST_DIR} test rooms",
             x_data,
             "test room",
             y_data,

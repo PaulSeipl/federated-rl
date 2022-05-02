@@ -1,7 +1,13 @@
 from copy import deepcopy
 from numpy.core.fromnumeric import mean
 from src import rooms, a2c
-from plots.helper import create_main_plot, create_worker_plot, get_plot_file_path
+from plots.helper import (
+    create_main_plot,
+    create_worker_plot,
+    get_plot_file_path,
+    save_worker_data,
+    save_test_data,
+)
 import layouts.helper as layouts
 from src.train import train, episode
 from pathlib import Path
@@ -34,9 +40,9 @@ def initialize_main_agent(test_env):
 
 
 def get_test_envs(rooms_dir, movie_path):
-    test_rooms_dir = f"{rooms_dir}/test"
+    test_rooms_dir = f"{rooms_dir}/test/{TEST_DIR}"
     test_room_files = layouts.get_room_files(test_rooms_dir)
-
+    print(test_room_files)
     test_envs = []
     # get every test room file
     for test_room_file in test_room_files:
@@ -74,14 +80,14 @@ def main():
     for room_file in room_files:
         name = room_file.replace(".txt", "")
 
-        env = rooms.load_env(
+        test_env = rooms.load_env(
             layouts.get_room_path(ROOMS_DIR, room_file),
             get_movie_file_path(name, MOVIE_PATH),
             MAX_STEPS,
         )
-        worker_envs.append(env)
+        worker_envs.append(test_env)
 
-        parameter = get_parameters(env, name, alpha=0.001, gamma=0.99)
+        parameter = get_parameters(test_env, name, alpha=0.001, gamma=0.99)
 
         parameterList.append(parameter)
 
@@ -104,13 +110,60 @@ def main():
 
     # run test with main_agent
     main_agent.a2c_net.eval()
-    returns = [
-        episode(test_env, main_agent, 0, isTraining=False) for test_env in test_envs
-    ]
+    returns = []
+    if TEST_STOCHASTIC:
+        for test_env in test_envs:
+            main_agent.name = test_env.name
+            returns.append(
+                [
+                    episode(test_env, main_agent, i, isTraining=False)
+                    for i in range(TEST_EPISODES)
+                ]
+            )
+        main_agent.name = "main_agent"
+    else:
+        returns = [
+            episode(test_env, main_agent, 0, isTraining=False) for test_env in test_envs
+        ]
 
     if SAVE_PLOTS:
         # create plot folder
         Path(PLOT_PATH).mkdir(parents=True, exist_ok=True)
+
+        x_data = [test_env.name for test_env in test_envs]
+        if TEST_STOCHASTIC:
+            y_data = []
+            for data in returns:
+                y_data.append(sum(data) / len(data))
+
+            create_main_plot(
+                f"Evaluation: {main_agent.name}",
+                x_data,
+                "test room",
+                y_data,
+                f"average discounted return of {TEST_EPISODES} episodes",
+                get_plot_file_path(
+                    f"{main_agent.name}",
+                    PLOT_PATH,
+                ),
+            )
+            save_test_data(x_data, returns)
+        else:
+            y_data = returns
+            create_main_plot(
+                f"Evaluation: {main_agent.name}",
+                x_data,
+                "test room",
+                y_data,
+                "discounted return",
+                get_plot_file_path(
+                    f"{main_agent.name}",
+                    PLOT_PATH,
+                ),
+            )
+
+        for (name, worker_return) in worker_returns:
+            save_worker_data(worker_return, name)
 
         for (name, worker_return) in worker_returns:
             x_data = range(len(worker_return))
@@ -126,26 +179,11 @@ def main():
                 get_plot_file_path(name, PLOT_PATH),
             )
 
-        x_data = [test_env.name for test_env in test_envs]
-        y_data = returns
-
-        create_main_plot(
-            f"Progress: {main_agent.name}",
-            x_data,
-            "test room",
-            y_data,
-            "discounted return",
-            get_plot_file_path(
-                f"{main_agent.name}",
-                PLOT_PATH,
-            ),
-        )
-
     if SAVE_VIDEOS:
         # create movie folder
         Path(MOVIE_PATH).mkdir(parents=True, exist_ok=True)
-        for env in worker_envs + test_envs:
-            env.save_video()
+        for test_env in worker_envs + test_envs:
+            test_env.save_video()
 
     if SAVE_MODELS:
         main_agent.save_net(
