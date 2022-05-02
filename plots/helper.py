@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plot
 
+from config import PLOT_PATH
+
 
 def get_plot_file_path(name, plot_path):
     return f"{plot_path}/{name}"
@@ -35,3 +37,18 @@ def create_main_plot(title, x_data, x_label, y_data, y_label, plot_name):
     plot.scatter(x_data, y_data)
     plot.xticks(x_data, [str(i) for i in x_data], rotation=90)
     create_plot(title, x_label, y_label, plot_name)
+
+
+def save_worker_data(y_data, name):
+    with open(f"{PLOT_PATH}/data_{name}", "w") as f:
+        f.write("\n".join([str(num) for num in y_data]))
+
+
+def save_test_data(x_data, returns, updates=0):
+    with open(
+        f"{PLOT_PATH}/plot_test_data_{updates if updates else 'final'}.txt", "w"
+    ) as f:
+        for name, data in zip(x_data, returns):
+            f.write(f"{name}:\n")
+            f.write("\n".join([str(num) for num in data]))
+            f.write("\n")

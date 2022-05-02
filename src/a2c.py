@@ -10,7 +10,7 @@ from copy import copy, deepcopy
 class A2CNet(nn.Module):
     def __init__(self, nr_input_features, nr_actions):
         super(A2CNet, self).__init__()
-        nr_hidden_units = 32
+        nr_hidden_units = 64
         self.fc_net = nn.Sequential(
             nn.Linear(nr_input_features, nr_hidden_units),
             nn.ReLU(),
@@ -88,7 +88,7 @@ class A2CLearner:
      Gets argmax of actions properties
     """
 
-    def policy_test(self, state):
+    def policy_deterministic(self, state):
         action_probs, _ = self.predict_policy([state])
         action = torch.argmax(action_probs)
         return action.item()

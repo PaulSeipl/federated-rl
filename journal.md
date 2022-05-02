@@ -206,3 +206,13 @@ self.optimizer.step()
 - raum wann drehen? nach x erfolgreichen dones? nach jedem gesamt update? -> nach jedem reset: DONE
 - andere aggregation? erstmal nicht
 - change architecture? weiter investigieren
+
+### Notes
+
+- FRL works better with less steps(local update) but more updates(aggregate)
+- many steps before aggregating leads to low quality results
+
+### Tests
+
+- multi processing
+- more agents, by creating an agent for each permutated room -> 6 rooms * 4 (permutaion)-> 24 rooms/agents; atm 6 agents and each agents traing on 4 rooms

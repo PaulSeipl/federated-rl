@@ -1,0 +1,35 @@
+0. Abstract
+
+1. Introduction (VI)
+	- Motivation
+	- Problem
+	- Hypothese
+	- Contributions
+		+ Methods
+			*
+			* Aggregation?
+			* ...
+		+ Experiments
+2. Background (I+III)
+	- MDP?
+	- RL?
+	- Definition
+	- Federated Learning
+3. Related Work (V)
+	- Stochastic Gradient Descent?
+	- Aggregation?
+	- ...
+	- ABGRENZUNG
+4. Methods (I)
+	- Trainings-Pipeline
+	- Aggregationsvarianten
+	- Pre-training
+5. Experiments (I+II)
+	- Domain: Rooms, ...
+	- Hyperparameter/Architecture/Metrik ...
+	- Results: Plots/Table (NO interpretation!)
+	- Discussion: Interpretation of results
+6. Conclusion (IV)
+	- "Abhaken" der Contributions
+7. Future Work (?)
+	- Was könnte man noch machen?
