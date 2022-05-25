@@ -35,7 +35,7 @@ def get_parameters(env, name, alpha=0.001, gamma=0.99):
 
 def initialize_main_agent(test_env):
     return a2c.A2CLearner(
-        get_parameters(test_env, "main_agent", alpha=0.001, gamma=0.99)
+        get_parameters(test_env, "main_agent", alpha=0.0001, gamma=0.99)
     )
 
 
@@ -78,16 +78,31 @@ def main():
     parameterList = []
     worker_agents = []
     for room_file in room_files:
-        name = room_file.replace(".txt", "")
+        if AGENT_PER_PERMUTATION:
+            name = room_file.replace(".txt", "_0")
+        else:
+            name = room_file.replace(".txt", "")
 
-        test_env = rooms.load_env(
+        worker_env = rooms.load_env(
             layouts.get_room_path(ROOMS_DIR, room_file),
             get_movie_file_path(name, MOVIE_PATH),
             MAX_STEPS,
+            room_name=name,
         )
-        worker_envs.append(test_env)
+        worker_envs.append(worker_env)
 
-        parameter = get_parameters(test_env, name, alpha=0.001, gamma=0.99)
+        if AGENT_PER_PERMUTATION:
+            # rotate every test room env and save it as own test room env
+            for i in range(1, 4):
+                temp_env = deepcopy(worker_env)
+                for _ in range(i):
+                    temp_env.rotate_map()
+                temp_env.name = temp_env.name.replace("_0", f"_{i}")
+                worker_envs.append(temp_env)
+
+    print(f"all rooms: {[worker_env.name for worker_env in worker_envs]}")
+    for worker_env in worker_envs:
+        parameter = get_parameters(worker_env, worker_env.name, alpha=0.001, gamma=0.99)
 
         parameterList.append(parameter)
 
@@ -112,11 +127,11 @@ def main():
     main_agent.a2c_net.eval()
     returns = []
     if TEST_STOCHASTIC:
-        for test_env in test_envs:
-            main_agent.name = test_env.name
+        for worker_env in test_envs:
+            main_agent.name = worker_env.name
             returns.append(
                 [
-                    episode(test_env, main_agent, i, isTraining=False)
+                    episode(worker_env, main_agent, i, isTraining=False)
                     for i in range(TEST_EPISODES)
                 ]
             )
@@ -182,8 +197,8 @@ def main():
     if SAVE_VIDEOS:
         # create movie folder
         Path(MOVIE_PATH).mkdir(parents=True, exist_ok=True)
-        for test_env in worker_envs + test_envs:
-            test_env.save_video()
+        for worker_env in worker_envs + test_envs:
+            worker_env.save_video()
 
     if SAVE_MODELS:
         main_agent.save_net(
