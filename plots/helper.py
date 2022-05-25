@@ -9,6 +9,7 @@ def get_plot_file_path(name, plot_path):
 
 def create_plot(title, x_label, y_label, plot_name):
     file_types = ["svg", "pdf", "png"]
+    plot.ylim((-0.1, 1))
     plot.title(title)
     plot.xlabel(x_label)
     plot.ylabel(y_label)
@@ -40,7 +41,7 @@ def create_main_plot(title, x_data, x_label, y_data, y_label, plot_name):
 
 
 def save_worker_data(y_data, name):
-    with open(f"{PLOT_PATH}/data_{name}", "w") as f:
+    with open(f"{PLOT_PATH}/data_{name}.txt", "w") as f:
         f.write("\n".join([str(num) for num in y_data]))
 
 

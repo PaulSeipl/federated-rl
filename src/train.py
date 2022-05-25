@@ -1,6 +1,7 @@
 from pathlib import Path
 from config import (
     AGGREATION_TYPES,
+    ROTATE_MAP,
     SAVE_PLOTS,
     PLOT_PATH,
     TEST_DIR,
@@ -56,7 +57,8 @@ def train(
                     episode(env, worker, i, interval * training_episodes)
                 )
                 # rotate map after every episode
-                env.rotate_map_random()
+                if ROTATE_MAP:
+                    env.rotate_map_random()
 
             # safe worker state_dict
             worker_state_dicts.append(worker.get_state_dict_copy())
