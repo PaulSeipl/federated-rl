@@ -35,7 +35,7 @@ def get_parameters(env, name, alpha=0.001, gamma=0.99):
 
 def initialize_main_agent(test_env):
     return a2c.A2CLearner(
-        get_parameters(test_env, "main_agent", alpha=0.0001, gamma=0.99)
+        get_parameters(test_env, "main_agent", alpha=0.001, gamma=0.99)
     )
 
 
@@ -201,9 +201,9 @@ def main():
             worker_env.save_video()
 
     if SAVE_MODELS:
-        main_agent.save_net(
-            f"{ROOMS_DIR}_tr{TRAINING_EPISODES}_x{WORKING_INTERVALS}_t{TEST_EPISODES}_{main_agent.name}"
-        )
+        Path(f"./models/{ROOMS_DIR}").mkdir(parents=True, exist_ok=True)
+        main_agent.save_net(f"{MODEL_PATH}_{main_agent.name}")
+        main_agent.save_state_dict(f"{MODEL_PATH}_{main_agent.name}")
 
 
 if __name__ == "__main__":
