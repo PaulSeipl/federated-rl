@@ -178,6 +178,10 @@ def get_weighted_zero_distribution(worker_returns, separator=0):
         worker_return[-separator:].count(0) for _, worker_return in worker_returns
     ]
     print(f"zeros_count: \n{zeros_count}")
+    # if every worker reached in every episode the goal
+    if sum(zeros_count) == 0:
+        return [1 / len(worker_returns) for _ in worker_returns]
+
     return [zero_count / sum(zeros_count) for zero_count in zeros_count]
 
 
