@@ -216,3 +216,8 @@ self.optimizer.step()
 
 - multi processing
 - more agents, by creating an agent for each permutated room -> 6 rooms * 4 (permutaion)-> 24 rooms/agents; atm 6 agents and each agents traing on 4 rooms
+
+## Notes
+
+- the whole setup works better since actor and critic use seperated nets
+- average > bad worker > good worker (overfitting)

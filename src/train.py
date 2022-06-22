@@ -1,6 +1,8 @@
 from pathlib import Path
+import random
 from config import (
     AGGREATION_TYPES,
+    PLOT_PATH_SOLO,
     ROTATE_MAP,
     SAVE_PLOTS,
     PLOT_PATH,
@@ -8,7 +10,6 @@ from config import (
     TEST_EPISODES,
     AGGREATION_TYPE,
     TEST_STOCHASTIC,
-    TRAINING_EPISODES,
 )
 from plots.helper import create_main_plot, get_plot_file_path, save_test_data
 
@@ -102,6 +103,64 @@ def train(
     return worker_returns
 
 
+def solo_train(
+    agent,
+    envs,
+    test_envs,
+    episodes,
+):
+    agent_returns = []
+    for i in range(episodes):
+        print("training episode: ", i)
+        # random env
+        rand_env = envs[random.randint(0, len(envs) - 1)]
+        # run episode
+        agent_returns.append(episode(rand_env, agent, i))
+        # random rotate of map
+        rand_env.rotate_map_random()
+
+        # test every 100 episodes
+        if (i + 1) % 100 == 0:
+            if TEST_STOCHASTIC:
+                test_solo_agent_stochastic(agent, test_envs, i + 1)
+            else:
+                pass  # test solo determenistic
+
+    return agent_returns
+
+
+def test_solo_agent_stochastic(agent, envs, episodes):
+    agent.a2c_net.eval()
+    returns = []
+    for env in envs:
+        agent.name = env.name
+        returns.append(
+            [episode(env, agent, i, isTraining=False) for i in range(TEST_EPISODES)]
+        )
+    agent.name = "main_agent"
+    agent.a2c_net.train()
+
+    if SAVE_PLOTS:
+        Path(PLOT_PATH_SOLO).mkdir(parents=True, exist_ok=True)
+        x_data = [env.name for env in envs]
+        y_data = []
+        for data in returns:
+            y_data.append(sum(data) / len(data))
+
+        create_main_plot(
+            f"Progress: {agent.name} after {episodes} episodes on {TEST_DIR} test rooms",
+            x_data,
+            "test room",
+            y_data,
+            f"average discounted return of {TEST_EPISODES} episodes",
+            get_plot_file_path(
+                f"{agent.name}_after {episodes} episodes",
+                PLOT_PATH_SOLO,
+            ),
+        )
+        save_test_data(x_data, returns, PLOT_PATH_SOLO, episodes)
+
+
 def test_agent_stochastic(agent, envs, updates):
     update_str = "update" if updates == 1 else "updates"
     # run test with main_agent
@@ -133,7 +192,7 @@ def test_agent_stochastic(agent, envs, updates):
                 PLOT_PATH,
             ),
         )
-        save_test_data(x_data, returns, updates)
+        save_test_data(x_data, returns, PLOT_PATH, updates)
 
 
 def test_agent_deterministic(agent, envs, updates=0):
