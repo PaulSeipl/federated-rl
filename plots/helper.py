@@ -45,9 +45,9 @@ def save_worker_data(y_data, name):
         f.write("\n".join([str(num) for num in y_data]))
 
 
-def save_test_data(x_data, returns, updates=0):
+def save_test_data(x_data, returns, plot_path, updates=0):
     with open(
-        f"{PLOT_PATH}/plot_test_data_{updates if updates else 'final'}.txt", "w"
+        f"{plot_path}/plot_test_data_{updates if updates else 'final'}.txt", "w"
     ) as f:
         for name, data in zip(x_data, returns):
             f.write(f"{name}:\n")

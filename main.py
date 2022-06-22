@@ -9,7 +9,7 @@ from plots.helper import (
     save_test_data,
 )
 import layouts.helper as layouts
-from src.train import train, episode
+from src.train import train, episode, solo_train
 from pathlib import Path
 from config import *
 
@@ -101,6 +101,16 @@ def main():
                 worker_envs.append(temp_env)
 
     print(f"all rooms: {[worker_env.name for worker_env in worker_envs]}")
+
+    if SOLO_TRAIN:
+        solo_train(main_agent, worker_envs, test_envs, SOLO_EPISODES)
+
+        if SAVE_MODELS:
+            Path(f"./models/{ROOMS_DIR}/solo").mkdir(parents=True, exist_ok=True)
+            main_agent.save_net(f"{MODEL_PATH_SOLO}_{main_agent.name}")
+            main_agent.save_state_dict(f"{MODEL_PATH_SOLO}_{main_agent.name}")
+        return
+
     for worker_env in worker_envs:
         parameter = get_parameters(worker_env, worker_env.name, alpha=0.001, gamma=0.99)
 
